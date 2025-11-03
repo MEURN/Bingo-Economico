@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruleta Económica</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap" rel="stylesheet">
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #4a3d60;
+  font-family: 'Montserrat', sans-serif;
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+h1 { 
+  margin: 20px 0; 
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-weight: 800;
+  padding: 0 15px;
+}
+
+.wheel-container {
+  position: relative;
+  margin: 20px auto;
+  width: min(90vw, 90vh, 600px);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.arrow {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: clamp(15px, 3vw, 20px) solid transparent;
+  border-right: clamp(15px, 3vw, 20px) solid transparent;
+  border-top: clamp(25px, 5vw, 35px) solid #c44fe0;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.5));
+  z-index: 10;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 90%;
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 0 15px;
+}
+
+button {
+  background-color: #751a42;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: clamp(10px, 2.5vw, 14px) clamp(20px, 4vw, 28px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+  font-family: 'Montserrat', sans-serif;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  touch-action: manipulation;
+}
+
+button:hover:not(:disabled) { 
+  background-color: #7c3959;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#spin {
+  background-color: #c44fe0;
+  font-size: clamp(1rem, 3vw, 1.3rem);
+  font-weight: 800;
+  padding: clamp(12px, 3vw, 16px) clamp(25px, 5vw, 35px);
+}
+
+#spin:hover:not(:disabled) {
+  background-color: #d666ed;
+}
+
+.accordion {
+  background-color: #604b85;
+  color: white;
+  cursor: pointer;
+  padding: clamp(12px, 2.5vw, 14px);
+  width: 100%;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.accordion:hover { 
+  background-color: #7a63a7;
+  transform: translateY(-2px);
+}
+
+.accordion.active {
+  border-radius: 10px 10px 0 0;
+}
+
+.panel {
+  background-color: #5d4a8f;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out;
+  border-radius: 0 0 10px 10px;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.panel.open {
+  overflow-y: auto;
+  max-height: min(70vh, 600px);
+  padding: 15px 10px;
+}
+
+.option-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: #7562a8;
+  border-radius: 10px;
+  padding: clamp(10px, 2vw, 12px);
+  margin: 10px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.option-input input, 
+.option-input textarea {
+  width: 100%;
+  padding: clamp(8px, 2vw, 10px);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  resize: none;
+  transition: border-color 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.option-input input:focus,
+.option-input textarea:focus {
+  outline: none;
+  border-color: #c44fe0;
+}
+
+.popup {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  width: min(600px, 90vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+  color: #4a3d60;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  padding: clamp(20px, 5vw, 35px);
+  text-align: center;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.popup.show {
+  display: block;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.popup h2 { 
+  margin-bottom: 15px; 
+  font-size: clamp(1.4rem, 4vw, 1.8rem);
+  font-weight: 800;
+  word-break: break-word;
+  color: #751a42;
+}
+
+.popup p { 
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  font-weight: 600;
+  margin: 15px 0;
+  text-align: left;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.popup strong {
+  color: #751a42;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.popup button { 
+  flex: 1;
+  min-width: 120px;
+  margin: 0;
+}
+
+/* Scrollbar personalizado para el panel */
+.panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.panel::-webkit-scrollbar-thumb {
+  background: #c44fe0;
+  border-radius: 10px;
+}
+
+.panel::-webkit-scrollbar-thumb:hover {
+  background: #d666ed;
+}
+
+/* Scrollbar para popup */
+.popup::-webkit-scrollbar {
+  width: 8px;
+}
+
+.popup::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.popup::-webkit-scrollbar-thumb {
+  background: #751a42;
+  border-radius: 10px;
+}
+
+@media (max-width: 600px) {
+  h1 { 
+    margin: 15px 0;
+  }
+  
+  .wheel-container {
+    margin: 15px auto;
+  }
+  
+  .controls {
+    gap: 10px;
+    margin: 15px auto;
+  }
+  
+  .popup {
+    padding: 20px;
+    border-radius: 15px;
+  }
+  
+  .popup-buttons {
+    flex-direction: column;
+  }
+  
+  .popup button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 400px) {
+  .arrow {
+    top: -15px;
+  }
+}
+
+/* Animación de entrada para el popup */
+@keyframes popupEntry {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+</style>
+</head>
+<body>
+<h1>💲 Ruleta Económica 💲</h1>
+
+<div class="wheel-container">
+  <canvas id="wheel"></canvas>
+  <div class="arrow"></div>
+</div>
+
+<div class="controls">
+  <button id="spin">🎯 Girar Ruleta</button>
+  <button class="accordion">⚙️ Editar valores</button>
+  <div class="panel" id="optionsPanel"></div>
+  <button id="addOption">➕ Agregar opción</button>
+  <button id="resetDefaults">🔄 Restablecer valores predeterminados</button>
+</div>
+
+<div class="popup" id="popup">
+  <h2 id="result"></h2>
+  <p><strong>Definición:</strong> <span id="description"></span></p>
+  <p><strong>Dato curioso:</strong> <span id="fact"></span></p>
+  <div class="popup-buttons">
+    <button id="closePopup">Cerrar</button>
+    <button id="spinAgain">Volver a girar</button>
+  </div>
+</div>
+
+<audio id="spinSound" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="winSound" src="./11l-victory-1749704552668-358772.mp3"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
